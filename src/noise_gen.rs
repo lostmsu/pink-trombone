@@ -32,7 +32,7 @@ const P: [u8; 256] = [
 
 pub struct NoiseGenerator {
     grad_p: [Grad; 512],
-    perm: [u8; 256],
+    perm: [u8; 512],
 }
 
 impl NoiseGenerator {
@@ -41,7 +41,7 @@ impl NoiseGenerator {
             seed |= seed << 8;
         }
 
-        for i in 0..255 {
+        for i in 0..256 {
             let v = if (i & 1) == 1 {
                 P[i] ^ (seed & 255) as u8
             } else {
@@ -58,7 +58,7 @@ impl NoiseGenerator {
     pub fn new(seed: u16) -> NoiseGenerator {
         let mut gen = NoiseGenerator {
             grad_p: [Grad{x:0.0, y: 0.0, z:0.0}; 512],
-            perm: [0; 256],
+            perm: [0; 512],
         };
         gen.set_seed(seed);
         gen
@@ -73,9 +73,9 @@ impl NoiseGenerator {
     
         // Skew the input space to determine which simplex cell we're in
         let s = (xin + yin) * f2; // Hairy factor for 2D
-        let mut i = (xin + s).floor() as usize;
-        let mut j = (yin + s).floor() as usize;
-        let t = (i + j) as f32 * g2;
+        let i = (xin + s).floor() as isize;
+        let j = (yin + s).floor() as isize;
+        let t = (i as f32 + j as f32) * g2;
         let x0 = xin - i as f32 + t; // The x,y distances from the cell origin, unskewed.
         let y0 = yin - j as f32 + t;
         // For the 2D case, the simplex shape is an equilateral triangle.
@@ -85,7 +85,7 @@ impl NoiseGenerator {
                 (1, 0)
             } else {    // upper triangle, YX order: (0,0)->(0,1)->(1,1)
                 (0, 1)
-         };
+            };
         // A step of (1,0) in (i,j) means a step of (1-c,-c) in (x,y), and
         // a step of (0,1) in (i,j) means a step of (-c,1-c) in (x,y), where
         // c = (3 - sqrt(3)) / 6
@@ -94,11 +94,11 @@ impl NoiseGenerator {
         let x2 = x0 - 1.0 + 2.0 * g2; // Offsets for last corner in (x,y) unskewed coords
         let y2 = y0 - 1.0 + 2.0 * g2;
         // Work out the hashed gradient indices of the three simplex corners
-        i &= 255;                                                // tsllet:disable-line:no-bitwise
-        j &= 255;                                                // tsllet:disable-line:no-bitwise
-        let gi0 = self.grad_p[i + self.perm[j] as usize];
-        let gi1 = self.grad_p[i + i1 + self.perm[j + j1] as usize];
-        let gi2 = self.grad_p[i + 1 + self.perm[j + 1] as usize];
+        let i_wrapped = i as u8 as usize;
+        let j_wrapped = j as u8 as usize;
+        let gi0 = self.grad_p[i_wrapped + self.perm[j_wrapped] as usize];
+        let gi1 = self.grad_p[i_wrapped + i1 + self.perm[j_wrapped + j1] as usize];
+        let gi2 = self.grad_p[i_wrapped + 1 + self.perm[j_wrapped + 1] as usize];
         // Noise contributions from the three corners
         let mut t0 = 0.5 - x0 * x0 - y0 * y0;
         let n0 = if t0 < 0.0 {
@@ -124,5 +124,18 @@ impl NoiseGenerator {
         // Add contributions from each corner to get the final noise value.
         // The result is scaled to return values in the leterval [-1,1].
         70.0 * (n0 + n1 + n2)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn reproducible() {
+        let mut generator = NoiseGenerator::new(15122);
+        let vals: Vec<f32> = (0..112341).map(|i| generator.simplex(i as f32)).collect();
+        assert_eq!(format!("{:.10}", vals.last().unwrap()), "0.8608906865");
     }
 }

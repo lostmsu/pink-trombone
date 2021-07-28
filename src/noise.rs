@@ -6,7 +6,7 @@ pub trait NoiseSource<T> {
     fn noise(&mut self) -> T;
 }
 
-pub fn new_filtered_noise_source(f0: f64, q: f64, sample_rate: u32, loop_size: usize) -> Box<dyn FnMut() -> f64> {
+pub fn new_filtered_noise_source(f0: f64, q: f64, sample_rate: u32, loop_size: usize) -> Box<dyn FnMut() -> f64 + Send + 'static> {
     let mut white_noise = new_looped_white_noise(loop_size);
     let mut filter = new_bandpass_filter(f0, q, sample_rate);
     Box::new(move || filter.filter(white_noise.noise()))

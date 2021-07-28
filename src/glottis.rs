@@ -21,7 +21,7 @@ pub struct Glottis {
     time_in_waveform: f32,
     old_tenseness: f32, new_tenseness: f32,
     old_frequency: f32, new_frequency: f32,
-    aspiration_noise_source: Box<dyn FnMut() -> f64>,
+    aspiration_noise_source: Box<dyn FnMut() -> f64 + Send + 'static>,
     waveform_length: f32,
 
     // waveform state

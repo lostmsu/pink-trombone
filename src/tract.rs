@@ -4,10 +4,10 @@ use crate::glottis::Glottis;
 use crate::transient::Transient;
 use crate::turbulence::TurbulencePoint;
 
-pub struct Tract{
+pub struct Tract {
     pub glottis: Glottis,
     sample_rate: u32,
-    frication_noise_source: Box<dyn FnMut() -> f64>,
+    frication_noise_source: Box<dyn FnMut() -> f64 + Send + 'static>,
 
     sample_count: usize,
     pub time: f32,

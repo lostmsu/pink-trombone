@@ -41,7 +41,7 @@ pub struct Glottis {
 }
 
 impl Glottis {
-    pub fn new(sample_rate: u32, rng: &mut dyn NoiseSource<f64>) -> Glottis {
+    pub fn new(sample_rate: u32, rng: &mut dyn NoiseSource<f64>, seed: u16) -> Glottis {
         let mut glottis = Glottis {
             always_voice: true,
             auto_wobble: true,
@@ -51,7 +51,7 @@ impl Glottis {
             vibrato_amount: 0.005,
             vibrato_frequency: 6.0,
 
-            noise_generator: NoiseGenerator::new(1142),
+            noise_generator: NoiseGenerator::new(seed),
 
             sample_rate,
 

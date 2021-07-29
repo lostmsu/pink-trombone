@@ -9,14 +9,14 @@ pub struct PinkTrombone {
 }
 
 impl PinkTrombone {
-    pub fn new(sample_rate: u32, rng: &mut dyn NoiseSource<f64>) -> PinkTrombone {
+    pub fn new(sample_rate: u32, rng: &mut dyn NoiseSource<f64>, seed: u16) -> PinkTrombone {
         if sample_rate >= u32::MAX / 2 {
             panic!("sample_rate too large");
         };
         if sample_rate == 0 {
             panic!("sample_rate must not be 0");
         }
-        let glottis = Glottis::new(sample_rate, rng);
+        let glottis = Glottis::new(sample_rate, rng, seed);
         // tract runs at twice the sample rate
         let tract = Tract::new(glottis, 2 * sample_rate, rng);
         PinkTrombone {
@@ -173,11 +173,12 @@ mod tests {
     use crate::rng::xorshift;
 
     const SAMPLE_RATE: u32 = 48000;
+    const SEED: u16 = 9452;
 
     #[test]
     fn reproducible() {
-        let mut random = xorshift::XorShift128::new(9452);
-        let mut trombone = PinkTrombone::new(SAMPLE_RATE, &mut random);
+        let mut random = xorshift::XorShift128::new(SEED.into());
+        let mut trombone = PinkTrombone::new(SAMPLE_RATE, &mut random, SEED);
         let mut buffer = vec![0.0; SAMPLE_RATE as usize * 15];
         trombone.synthesize(&mut buffer);
         assert_eq!(format!("{:.10}", buffer.last().unwrap()), "0.0385491103");

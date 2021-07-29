@@ -67,7 +67,8 @@ const SAMPLE_RATE: u32 = 48000;
 
 fn main() {
     let mut random = ThreadRng {};
-    let trombone = PinkTrombone::new(SAMPLE_RATE, &mut random);
+    let seed = rand::thread_rng().gen();
+    let trombone = PinkTrombone::new(SAMPLE_RATE, &mut random, seed);
     let source = PinkTromboneSource::new(trombone);
 
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();

@@ -1,21 +1,30 @@
 use std::f64::consts::PI;
 
-use rand::Rng;
-
 pub trait NoiseSource<T> {
     fn noise(&mut self) -> T;
 }
 
-pub fn new_filtered_noise_source(f0: f64, q: f64, sample_rate: u32, loop_size: usize) -> Box<dyn FnMut() -> f64 + Send + 'static> {
-    let mut white_noise = new_looped_white_noise(loop_size);
+pub fn new_filtered_noise_source(
+    f0: f64,
+    q: f64,
+    sample_rate: u32,
+    loop_size: usize,
+    rng: &mut dyn NoiseSource<f64>,
+) -> Box<dyn FnMut() -> f64 + Send + 'static> {
+    let mut white_noise = new_looped_white_noise(loop_size, rng);
     let mut filter = new_bandpass_filter(f0, q, sample_rate);
     Box::new(move || filter.filter(white_noise.noise()))
 }
 
-fn new_looped_white_noise(loop_size: usize) -> impl NoiseSource<f64> {
-    let mut rng = rand::thread_rng();
-    let noise = (0..loop_size).map(|_| rng.gen()).collect();
-    LoopedNoiseBuffer { noise, current_index: 0 }
+fn new_looped_white_noise(
+    loop_size: usize,
+    rng: &mut dyn NoiseSource<f64>,
+) -> impl NoiseSource<f64> {
+    let noise = (0..loop_size).map(|_| 2.0 * rng.noise() - 1.0).collect();
+    LoopedNoiseBuffer {
+        noise,
+        current_index: 0,
+    }
 }
 
 struct LoopedNoiseBuffer {
@@ -63,7 +72,7 @@ struct BiquadIirFilter {
 }
 
 impl BiquadIirFilter {
-    pub fn new(b0: f64, b1: f64, b2: f64, a0: f64, a1: f64, a2: f64) -> BiquadIirFilter{
+    pub fn new(b0: f64, b1: f64, b2: f64, a0: f64, a1: f64, a2: f64) -> BiquadIirFilter {
         BiquadIirFilter {
             nb0: b0 / a0,
             nb1: b1 / a0,
@@ -80,7 +89,9 @@ impl BiquadIirFilter {
 
 impl Filter for BiquadIirFilter {
     fn filter(&mut self, x: f64) -> f64 {
-        let y = self.nb0 * x + self.nb1 * self.x1 + self.nb2 * self.x2 - self.na1 * self.y1 - self.na2 * self.y2;
+        let y = self.nb0 * x + self.nb1 * self.x1 + self.nb2 * self.x2
+            - self.na1 * self.y1
+            - self.na2 * self.y2;
         self.x2 = self.x1;
         self.x1 = x;
         self.y2 = self.y1;

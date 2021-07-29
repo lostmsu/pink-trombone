@@ -2,18 +2,12 @@ mod glottis;
 mod math;
 mod noise;
 mod noise_gen;
-mod trombone;
+mod rng;
 mod tract;
 mod tract_shaper;
 mod transient;
+mod trombone;
 mod turbulence;
 
+pub use noise::NoiseSource;
 pub use trombone::PinkTrombone;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

@@ -1,4 +1,7 @@
-use crate::{glottis::Glottis, tract::Tract, tract_shaper::TractShaper, turbulence::TurbulencePoint};
+use crate::{
+    glottis::Glottis, noise::NoiseSource, tract::Tract, tract_shaper::TractShaper,
+    turbulence::TurbulencePoint,
+};
 
 pub struct PinkTrombone {
     shaper: TractShaper,
@@ -6,16 +9,16 @@ pub struct PinkTrombone {
 }
 
 impl PinkTrombone {
-    pub fn new(sample_rate: u32) -> PinkTrombone {
+    pub fn new(sample_rate: u32, rng: &mut dyn NoiseSource<f64>) -> PinkTrombone {
         if sample_rate >= u32::MAX / 2 {
             panic!("sample_rate too large");
         };
         if sample_rate == 0 {
             panic!("sample_rate must not be 0");
         }
-        let glottis = Glottis::new(sample_rate);
+        let glottis = Glottis::new(sample_rate, rng);
         // tract runs at twice the sample rate
-        let tract = Tract::new(glottis, 2 * sample_rate);
+        let tract = Tract::new(glottis, 2 * sample_rate, rng);
         PinkTrombone {
             sample_rate,
             shaper: TractShaper::new(tract),
@@ -24,58 +27,80 @@ impl PinkTrombone {
 
     const MAX_BLOCK_LEN: usize = 512;
 
+    pub fn sample_rate(&self) -> u32 {
+        self.sample_rate
+    }
+
     // /// -1..+1
     //pub fn noise(self) -> f32 {}
 
     /// 0..1
-    pub fn intensity(&self) -> f32 { self.glottis().intensity }
+    pub fn intensity(&self) -> f32 {
+        self.glottis().intensity
+    }
     pub fn set_intensity(&mut self, intensity: f32) {
         self.glottis_mut().intensity = intensity
     }
 
     /// 0..1
-    pub fn loudness(&self) -> f32 { self.glottis().loudness }
+    pub fn loudness(&self) -> f32 {
+        self.glottis().loudness
+    }
     pub fn set_loudness(&mut self, loudness: f32) {
         self.glottis_mut().loudness = loudness
     }
 
     /// 0..
-    pub fn target_frequency(&self) -> f32 { self.glottis().target_frequency }
+    pub fn target_frequency(&self) -> f32 {
+        self.glottis().target_frequency
+    }
     pub fn set_target_frequency(&mut self, target_frequency: f32) {
         self.glottis_mut().target_frequency = target_frequency
     }
 
     /// 0..1
-    pub fn target_tenseness(&self) -> f32 { self.glottis().target_tenseness }
+    pub fn target_tenseness(&self) -> f32 {
+        self.glottis().target_tenseness
+    }
     pub fn set_target_tenseness(&mut self, target_tenseness: f32) {
         self.glottis_mut().target_tenseness = target_tenseness
     }
 
     /// 0..44 (see also Tract::n)
-    pub fn tongue_index(&self) -> f64 { self.shaper.tongue_index }
+    pub fn tongue_index(&self) -> f64 {
+        self.shaper.tongue_index
+    }
     pub fn set_tongue_index(&mut self, tongue_index: f64) {
         self.shaper.tongue_index = tongue_index
     }
 
     /// 0..3(?)
-    pub fn tongue_diameter(&self) -> f32 { self.shaper.tongue_diameter }
-    pub fn set_tongue_diameter(&mut self, tongue_diameter: f32) {
+    pub fn tongue_diameter(&self) -> f64 {
+        self.shaper.tongue_diameter
+    }
+    pub fn set_tongue_diameter(&mut self, tongue_diameter: f64) {
         self.shaper.tongue_diameter = tongue_diameter
     }
 
     /// 0..
-    pub fn vibrato_gain(&self) -> f32 { self.glottis().vibrato_amount }
+    pub fn vibrato_gain(&self) -> f32 {
+        self.glottis().vibrato_amount
+    }
     pub fn set_vibrato_gain(&mut self, vibrato_gain: f32) {
         self.glottis_mut().vibrato_amount = vibrato_gain
     }
 
     /// 0..
-    pub fn vibrato_frequency(&self) -> f32 { self.glottis().vibrato_frequency }
+    pub fn vibrato_frequency(&self) -> f32 {
+        self.glottis().vibrato_frequency
+    }
     pub fn set_vibrato_frequency(&mut self, vibrato_frequency: f32) {
         self.glottis_mut().vibrato_frequency = vibrato_frequency
     }
 
-    pub fn vibrato_wobble(&self) -> bool { self.glottis().auto_wobble }
+    pub fn vibrato_wobble(&self) -> bool {
+        self.glottis().auto_wobble
+    }
     pub fn set_vibrato_wobble(&mut self, vibrato_wobble: bool) {
         self.glottis_mut().auto_wobble = vibrato_wobble
     }
@@ -139,5 +164,22 @@ impl PinkTrombone {
     fn tract_mut(&mut self) -> &mut Tract {
         &mut self.shaper.tract
     }
+}
 
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    use crate::rng::xorshift;
+
+    const SAMPLE_RATE: u32 = 48000;
+
+    #[test]
+    fn reproducible() {
+        let mut random = xorshift::XorShift128::new(9452);
+        let mut trombone = PinkTrombone::new(SAMPLE_RATE, &mut random);
+        let mut buffer = vec![0.0; SAMPLE_RATE as usize * 15];
+        trombone.synthesize(&mut buffer);
+        assert_eq!(format!("{:.10}", buffer.last().unwrap()), "0.0385491103");
+    }
 }

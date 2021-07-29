@@ -2,7 +2,6 @@ use std::f64::consts::PI;
 
 use crate::{math, tract::Tract, transient::Transient};
 
-
 pub struct TractShaper {
     pub tract: Tract,
     velum_open_target: f32,
@@ -10,11 +9,11 @@ pub struct TractShaper {
     target_diameter: [f64; Tract::N],
     velum_target: f32,
     pub tongue_index: f64,
-    pub tongue_diameter: f32,
+    pub tongue_diameter: f64,
     last_obstruction: i32,
 }
 
-const GRID_OFFSET: f32 = 1.7;
+const GRID_OFFSET: f64 = 1.7;
 const MOVEMENT_SPEED: f64 = 15.0;
 
 impl TractShaper {
@@ -36,7 +35,7 @@ impl TractShaper {
         res
     }
 
-    fn shape_main_tract(&mut self){
+    fn shape_main_tract(&mut self) {
         for i in 0..Tract::N {
             let d = self.get_rest_diameter(i);
             self.tract.diameter[i] = d;
@@ -45,14 +44,20 @@ impl TractShaper {
     }
 
     pub fn get_rest_diameter(&self, i: usize) -> f64 {
-        if i < 7 { return 0.6; }
-        if i < Tract::BLADE_START { return 1.1; }
-        if i >= Tract::LIP_START { return 1.5; }
+        if i < 7 {
+            return 0.6;
+        }
+        if i < Tract::BLADE_START {
+            return 1.1;
+        }
+        if i >= Tract::LIP_START {
+            return 1.5;
+        }
 
         let t = 1.1 * PI * (self.tongue_index - i as f64)
             / (Tract::TIP_START - Tract::BLADE_START) as f64;
         let fixed_tongue_diameter = 2.0 + (self.tongue_diameter - 2.0) / 1.5;
-        let mut curve = (1.5 - fixed_tongue_diameter + GRID_OFFSET) as f64 * t.cos();
+        let mut curve = (1.5 - fixed_tongue_diameter + GRID_OFFSET) * t.cos();
 
         if i == Tract::BLADE_START - 2 || i == Tract::LIP_START - 1 {
             curve *= 0.8;
@@ -73,19 +78,36 @@ impl TractShaper {
             if diameter <= 0.0 {
                 new_last_obstruction = i as i32;
             }
-            let slow_return =
-                if i < Tract::NOSE_START {0.6}
-                else if i >= Tract::TIP_START {1.0}
-                else { 0.6 + 0.4 * ((i - Tract::NOSE_START) / (Tract::TIP_START - Tract::NOSE_START)) as f64 };
+            let slow_return = if i < Tract::NOSE_START {
+                0.6
+            } else if i >= Tract::TIP_START {
+                1.0
+            } else {
+                0.6 + 0.4 * (i - Tract::NOSE_START) as f64
+                    / (Tract::TIP_START - Tract::NOSE_START) as f64
+            };
 
-            self.tract.diameter[i] = math::move_towards(diameter, target_diameter, slow_return * amount, 2.0 * amount);
+            self.tract.diameter[i] = math::move_towards(
+                diameter,
+                target_diameter,
+                slow_return * amount,
+                2.0 * amount,
+            );
         }
 
-        if self.last_obstruction >= 0 && new_last_obstruction < 0 && self.tract.nose_diameter[0] < 0.223 {
+        if self.last_obstruction >= 0
+            && new_last_obstruction < 0
+            && self.tract.nose_diameter[0] < 0.223
+        {
             self.add_transient(self.last_obstruction as usize);
         }
         self.last_obstruction = new_last_obstruction;
-        self.tract.nose_diameter[0] = math::move_towards(self.tract.nose_diameter[0], self.velum_target as f64, amount * 0.25, amount * 0.1);
+        self.tract.nose_diameter[0] = math::move_towards(
+            self.tract.nose_diameter[0],
+            self.velum_target as f64,
+            amount * 0.25,
+            amount * 0.1,
+        );
     }
 
     fn add_transient(&mut self, position: usize) {
@@ -99,13 +121,20 @@ impl TractShaper {
     }
 
     fn shape_noise(&mut self, velum_open: bool) {
-        self.velum_target = if velum_open { self.velum_open_target } else { self.velum_closed_target };
+        self.velum_target = if velum_open {
+            self.velum_open_target
+        } else {
+            self.velum_closed_target
+        };
         for i in 0..Tract::NOSE_LEN {
             let d = i as f64 * 2.0 / Tract::NOSE_LEN as f64;
-            let mut diameter =
-                if i == 0 { self.velum_target as f64 }
-                else if d < 1.0 { 0.4 + 1.6 * d }
-                else { 0.5 + 1.5 * (2.0 - d) };
+            let mut diameter = if i == 0 {
+                self.velum_target as f64
+            } else if d < 1.0 {
+                0.4 + 1.6 * d
+            } else {
+                0.5 + 1.5 * (2.0 - d)
+            };
 
             diameter = diameter.min(1.9);
             self.tract.nose_diameter[i] = diameter;

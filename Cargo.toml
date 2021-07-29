@@ -6,7 +6,7 @@ readme = "README.md"
 authors = ["Neil Thapen", "Victor Nova <lostfreeman@gmail.com>"]
 description = "Vocal cords simulator"
 keywords = ["voice"]
-categories = ["audio"]
+categories = ["multimedia::audio", "simulation"]
 license = "MIT"
 repository = "https://github.com/lostmsu/pink-trombone"
 

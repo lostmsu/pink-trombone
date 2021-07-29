@@ -10,6 +10,6 @@ pub fn move_towards(current: f64, target: f64, amount_up: f64, amount_down: f64)
     if current < target {
         target.min(current + amount_up)
     } else {
-        target.min(current - amount_down)
+        target.max(current - amount_down)
     }
 }

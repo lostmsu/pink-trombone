@@ -1,6 +1,6 @@
 [package]
 name = "pink-trombone"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2018"
 readme = "README.md"
 authors = ["Neil Thapen", "Victor Nova <lostfreeman@gmail.com>"]

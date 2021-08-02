@@ -112,6 +112,10 @@ impl PinkTrombone {
         self.glottis_mut().auto_wobble = vibrato_wobble
     }
 
+    pub fn set_velum_open(&mut self, velum_open: bool) {
+        self.shaper.set_velum_open(velum_open);
+    }
+
     pub fn turbulence_points(&mut self) -> &mut Vec<TurbulencePoint> {
         &mut self.tract_mut().turbulence_points
     }

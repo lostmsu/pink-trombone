@@ -121,11 +121,7 @@ impl TractShaper {
     }
 
     fn shape_noise(&mut self, velum_open: bool) {
-        self.velum_target = if velum_open {
-            self.velum_open_target
-        } else {
-            self.velum_closed_target
-        };
+        self.set_velum_open(velum_open);
         for i in 0..Tract::NOSE_LEN {
             let d = i as f64 * 2.0 / Tract::NOSE_LEN as f64;
             let mut diameter = if i == 0 {
@@ -139,5 +135,13 @@ impl TractShaper {
             diameter = diameter.min(1.9);
             self.tract.nose_diameter[i] = diameter;
         }
+    }
+
+    pub fn set_velum_open(&mut self, velum_open: bool) {
+        self.velum_target = if velum_open {
+            self.velum_open_target
+        } else {
+            self.velum_closed_target
+        };
     }
 }

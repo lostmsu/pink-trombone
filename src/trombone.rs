@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{
     glottis::Glottis, noise::NoiseSource, tract::Tract, tract_shaper::TractShaper,
     turbulence::TurbulencePoint,
@@ -29,6 +31,11 @@ impl PinkTrombone {
 
     pub fn sample_rate(&self) -> u32 {
         self.sample_rate
+    }
+
+    /// How much time has already been generated.
+    pub fn time(&self) -> Duration {
+        Duration::from_secs_f32(self.tract().time)
     }
 
     // /// -1..+1

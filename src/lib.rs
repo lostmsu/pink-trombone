@@ -11,3 +11,4 @@ mod turbulence;
 
 pub use noise::NoiseSource;
 pub use trombone::PinkTrombone;
+pub use turbulence::TurbulencePoint;
